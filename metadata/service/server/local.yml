@@ -1,5 +1,8 @@
 applications:
 - rabbitmq
+classes:
+- service.rabbitmq.support
+
 parameters:
   _param:
     rabbitmq_admin_user: admin
@@ -12,6 +15,10 @@ parameters:
       bind:
         address: 127.0.0.1
         port: 5672
+      management:
+        bind:
+          address: 127.0.0.1
+          port: 15672
       plugins:
       - amqp_client
       - rabbitmq_management

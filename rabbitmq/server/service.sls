@@ -12,6 +12,7 @@ rabbitmq_config:
   - template: jinja
   - user: rabbitmq
   - group: rabbitmq
+  - makedirs: True
   - mode: 440
   - require:
     - pkg: rabbitmq_packages
@@ -31,7 +32,7 @@ rabbitmq_default_config:
 
 {%- endif %}
 
-{%- if server.secret_key is defined %}
+{%- if server.secret_key is defined and not grains.get('noservices', False) %}
 
 {%- if salt['cmd.run']('cat '+server.cookie_file) != server.secret_key %}
 
@@ -46,7 +47,7 @@ sleep_before_rabbitmq_stop:
 
 stop_rabbitmq_service:
   cmd.run:
-  - name: /etc/init.d/rabbitmq-server stop
+  - name: service {{ server.service }} stop
   - require:
     - cmd: sleep_before_rabbitmq_stop
 
@@ -88,11 +89,31 @@ sleep_before_rabbitmq_start:
 
 {%- endif %}
 
+{%- if not grains.get('noservices', False) %}
 rabbitmq_service:
   service.running:
   - enable: true
   - name: {{ server.service }}
   - watch:
     - file: rabbitmq_config
+      {% if server.ssl.enabled %}
+    - file: rabbitmq_cacertificate
+    - file: rabbitmq_certificate
+    - file: rabbitmq_server_key
+    - file: rabbitmq_ssl_all_file
+    - file: rabbitmq_ssl_env
+      {%- endif %}
+{%- endif %}
+
+{%- if grains.get('virtual_subtype', None) == "Docker" %}
+
+rabbitmq_entrypoint:
+  file.managed:
+  - name: /entrypoint.sh
+  - template: jinja
+  - source: salt://rabbitmq/files/entrypoint.sh
+  - mode: 755
+
+{%- endif %}
 
 {%- endif %}

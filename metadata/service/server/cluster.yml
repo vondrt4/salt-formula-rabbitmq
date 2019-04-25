@@ -1,5 +1,8 @@
 applications:
 - rabbitmq
+classes:
+- service.rabbitmq.support
+
 parameters:
   rabbitmq:
     server:
@@ -10,21 +13,16 @@ parameters:
       bind:
         address: ${_param:cluster_local_address}
         port: 5672
+      management:
+        bind:
+          address: ${_param:cluster_local_address}
+          port: 15672
       plugins:
       - amqp_client
       - rabbitmq_management
       admin:
         name: admin
         password: ${_param:rabbitmq_admin_password}
-      host:
-        '/openstack':
-          enabled: true
-          user: openstack
-          password: ${_param:rabbitmq_openstack_password}
-          policies:
-          - name: HA
-            pattern: '^(?!amq\.).*' 
-            definition: '{"ha-mode": "all"}'
     cluster:
       enabled: true
       name: openstack
@@ -47,15 +45,15 @@ parameters:
           - address: ${_param:cluster_vip_address}
             port: 5672
           servers:
-          - name: ctl01
+          - name: ${_param:cluster_node01_hostname}
             host: ${_param:cluster_node01_address}
             port: 5672
-            params: check inter 5000 rise 2 fall 3 
-          - name: ctl02
+            params: check inter 5000 rise 2 fall 3
+          - name: ${_param:cluster_node02_hostname}
             host: ${_param:cluster_node02_address}
             port: 5672
             params: backup check inter 5000 rise 2 fall 3
-          - name: ctl03
+          - name: ${_param:cluster_node03_hostname}
             host: ${_param:cluster_node03_address}
             port: 5672
             params: backup check inter 5000 rise 2 fall 3

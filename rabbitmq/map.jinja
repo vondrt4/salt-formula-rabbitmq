@@ -1,39 +1,57 @@
-
 {% set server = salt['grains.filter_by']({
+    'default': {
+        'ssl': {
+            'enabled': False,
+            'versions': ['tlsv1.2','tlsv1.1','tlsv1'],
+            'ca_file': '/etc/rabbitmq/ssl/ca.pem',
+            'cert_file': '/etc/rabbitmq/ssl/cert.pem',
+            'key_file': '/etc/rabbitmq/ssl/key.pem',
+            'all_file': '/etc/rabbitmq/ssl/all_file.pem'
+        },
+        'config_file': '/etc/rabbitmq/rabbitmq.config',
+        'env_file': '/etc/rabbitmq/rabbitmq-env.conf',
+        'cookie_file': '/var/lib/rabbitmq/.erlang.cookie',
+        'ulimit': 8192,
+        'disk_free_limit': 50000000,
+        'bind': {
+            'address': '0.0.0.0',
+            'port': '5672',
+            'ssl': {
+                'address': '0.0.0.0',
+                'port': '5671'
+            },
+        },
+        'management': {
+            'bind': {
+                'address': '127.0.0.1',
+                'port': '15672'
+            }
+        }
+    },
     'Arch': {
         'pkgs': ['rabbitmq'],
-        'service': 'rabbitmq',
-        'config_file': '/etc/rabbitmq/rabbitmq.config',
-        'cookie_file': '/var/lib/rabbitmq/.erlang.cookie',
-        'ulimit': 8192,
-        'bind': {
-            'address': '0.0.0.0',
-            'port': '5672'
-        },
+        'service': 'rabbitmq'
     },
     'Debian': {
-        'pkgs': ['rabbitmq-server'],
+        'pkgs': ['rabbitmq-server', 'gettext-base'],
         'service': 'rabbitmq-server',
-        'config_file': '/etc/rabbitmq/rabbitmq.config',
-        'cookie_file': '/var/lib/rabbitmq/.erlang.cookie',
-        'default_file': '/etc/default/rabbitmq-server',
-        'ulimit': 8192,
-        'bind': {
-            'address': '0.0.0.0',
-            'port': '5672'
-        },
+        'default_file': '/etc/default/rabbitmq-server'
     },
     'RedHat': {
         'pkgs': ['rabbitmq-server'],
-        'service': 'rabbitmq-server',
-        'config_file': '/etc/rabbitmq/rabbitmq.config',
-        'cookie_file': '/var/lib/rabbitmq/.erlang.cookie',
-        'ulimit': 8192,
-        'bind': {
-            'address': '0.0.0.0',
-            'port': '5672'
-        },
+        'service': 'rabbitmq-server'
     },
-}, merge=salt['pillar.get']('rabbitmq:server')) %}
+}, merge=pillar.rabbitmq.get('server', {}), base='default') %}
 
-{% set cluster = salt['pillar.get']('rabbitmq:cluster') %}
+{% set cluster = pillar.rabbitmq.get('cluster', {}) %}
+
+{%- set rabbitmq_users = {} %}
+{%- for host_name, host in server.get('host', {}).iteritems() %}
+{%- do rabbitmq_users.update({host.user: [host]}) %}
+{%- endfor %}
+{%- set monitoring = salt['grains.filter_by']({
+  'default': {
+    'low_memory': 100 * 1024 * 1024,
+    'too_many_messages': 1024 * 1024,
+  },
+}, grain='os_family', merge=salt['pillar.get']('rabbitmq:monitoring')) %}

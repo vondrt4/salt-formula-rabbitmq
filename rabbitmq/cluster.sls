@@ -5,27 +5,18 @@ include:
 - linux.network.host
 - rabbitmq.server.service
 
-rabbitmq_dirs:
-  file.directory:
-  - names:
-    - /root/rabbitmq/flags
-  - mode: 700
-  - user: root
-  - group: root
-  - makedirs: true
+{% if cluster.get('role', 'None') == 'master' %}
 
-{% if cluster.get('role', 'slave') == 'master' %}
-
-rabbitmq_cluster_init:
+rabbitmq_cluster_name:
   cmd.run:
-  - names:
-    - rabbitmqctl set_cluster_name {{ cluster.get('name', 'rabbitmq') }}
-  - unless: test -e /root/rabbitmq/flags/cluster-installed
+  - name: >
+      rabbitmqctl set_cluster_name {{ cluster.get('name', 'rabbitmq') }} &&
+      echo "{{ cluster.get('name', 'rabbitmq') }}" > /var/lib/rabbitmq/.cluster_name
+  - creates: /var/lib/rabbitmq/.cluster_name
   - require:
-    - file: rabbitmq_dirs
     - service: rabbitmq_service
 
-{% else %}
+{% elif cluster.get('role', 'None') == 'slave' %}
 
 rabbit@master:
   rabbitmq_cluster.join:
@@ -35,18 +26,12 @@ rabbit@master:
   - ram_node: true
   {%- endif %}
   - require:
-    - file: rabbitmq_dirs
     - service: rabbitmq_service
+
+{%- else %}
+
+{# Container deployment role independent #}
 
 {%- endif %}
-
-rabbitmq_cluster_init_final:
-  cmd.run:
-  - names:
-    - touch /root/rabbitmq/flags/cluster-installed
-  - unless: test -e /root/rabbitmq/flags/cluster-installed
-  - require:
-    - file: rabbitmq_dirs
-    - service: rabbitmq_service
 
 {%- endif %}

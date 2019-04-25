@@ -94,8 +94,86 @@ HA Queues definition
           password: 'password'
           policies:
           - name: HA
-            pattern: '^(?!amq\.).*' 
+            pattern: '^(?!amq\.).*'
             definition: '{"ha-mode": "all"}'
+
+
+
+Enable TLS support
+------------------
+
+To enable support of TLS for rabbitmq-server you need to provide a path to cacert, server cert and private key :
+
+.. code-block:: yaml
+
+   rabbitmq:
+      server:
+        enabled: true
+        ...
+        ssl:
+          enabled: True
+          key_file: /etc/rabbitmq/ssl/key.pem
+          cert_file: /etc/rabbitmq/ssl/cert.pem
+          ca_file: /etc/rabbitmq/ssl/ca.pem
+
+To manage content of these files you can either use the following options:
+
+.. code-block:: yaml
+
+   rabbitmq:
+      server:
+        enabled: true
+        ...
+        ssl:
+          enabled: True
+
+          key_file: /etc/rabbitmq/ssl/key.pem
+          key: |
+          -----BEGIN RSA PRIVATE KEY-----
+                    ...
+          -----END RSA PRIVATE KEY-------
+
+          ca_file: /etc/rabbitmq/ssl/ca.pem
+          cacert_chain: |
+          -----BEGIN CERTIFICATE-----
+                    ...
+          -----END CERTIFICATE-------
+
+          cert_file: /etc/rabbitmq/ssl/cert.pem
+          cert: |
+          -----BEGIN CERTIFICATE-----
+                    ...
+          -----END CERTIFICATE-------
+
+
+Or you can use the `salt.minion.cert` salt state which
+creates all required files according to defined reclass model [1]. In this case you need just to enable ssl and nothing more:
+
+.. code-block:: yaml
+
+   rabbitmq:
+      server:
+        enabled: true
+        ...
+        ssl:
+          enabled: True
+
+--
+
+Defaut port for TLS is **5671**:
+
+.. code-block:: yaml
+
+  rabbitmq:
+    server:
+      bind:
+        ssl:
+         port: 5671
+
+
+1. https://github.com/Mirantis/reclass-system-salt-model/tree/master/salt/minion/cert/rabbitmq
+
+
 
 Usage
 =====
@@ -105,9 +183,9 @@ Check cluster status, example shows running cluster with 3 nodes: ctl-1, ctl-2, 
 .. code-block:: yaml
 
     > rabbitmqctl cluster_status
-    
+
     Cluster status of node 'rabbit@ctl-1' ...
-    [{nodes,[{disc,['rabbit@ctl-1','rabbit@ctl-2','rabbit@ctl-3']}]}, 
+    [{nodes,[{disc,['rabbit@ctl-1','rabbit@ctl-2','rabbit@ctl-3']}]},
      {running_nodes,['rabbit@ctl-3','rabbit@ctl-2','rabbit@ctl-1']},
      {partitions,[]}]
     ...done.
@@ -140,3 +218,36 @@ Clustering
 * https://github.com/jesusaurus/hpcs-salt-state/tree/master/rabbitmq
 * http://gigisayfan.blogspot.cz/2012/06/rabbit-mq-clustering-python-fabric.html
 * http://docwiki.cisco.com/wiki/OpenStack_Havana_Release:_High-Availability_Manual_Deployment_Guide#RabbitMQ_Installation
+
+Documentation and Bugs
+======================
+
+To learn how to install and update salt-formulas, consult the documentation
+available online at:
+
+    http://salt-formulas.readthedocs.io/
+
+In the unfortunate event that bugs are discovered, they should be reported to
+the appropriate issue tracker. Use Github issue tracker for specific salt
+formula:
+
+    https://github.com/salt-formulas/salt-formula-rabbitmq/issues
+
+For feature requests, bug reports or blueprints affecting entire ecosystem,
+use Launchpad salt-formulas project:
+
+    https://launchpad.net/salt-formulas
+
+You can also join salt-formulas-users team and subscribe to mailing list:
+
+    https://launchpad.net/~salt-formulas-users
+
+Developers wishing to work on the salt-formulas projects should always base
+their work on master branch and submit pull request against specific formula.
+
+    https://github.com/salt-formulas/salt-formula-rabbitmq
+
+Any questions or feedback is always welcome so feel free to join our IRC
+channel:
+
+    #salt-formulas @ irc.freenode.net
